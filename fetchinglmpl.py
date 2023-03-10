@@ -111,7 +111,6 @@ class fetching():
                     "unitsId":unitsId,
                     "measureProperty":"Power",
                     "or":[
-                    {"measureType":"Current"},
                     {"measureType":"Load"},
                     {"measureType":"Apc"},
                     ]
