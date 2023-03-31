@@ -308,13 +308,13 @@ class apcManager(posting):
         self.unitsIdList = unitsIdList
 
     # ------------------------- Creating meta level start ---------------------- #
-    def mainELfunction(self):
+    def mainELfunction(self,unitsIdList):
         """
         Use: to filter data equipment wise.
         """
         try:
             print("At equipment level.....")
-            tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList)
+            tagmeta = self.getTagmetaFromUnitsId(unitsIdList)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 # print(df)
@@ -332,10 +332,10 @@ class apcManager(posting):
             print(traceback.format_exc())
 
 
-    def mainSLFunction(self):
+    def mainSLFunction(self,unitsIdList):
         try:
             print("At system level......")
-            tagmeta = self.getTagmetaForSL(self.unitsIdList)
+            tagmeta = self.getTagmetaForSL(unitsIdList)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 for sysName in df["systemName"].unique():
@@ -353,10 +353,10 @@ class apcManager(posting):
             print(traceback.format_exc())
 
 
-    def mainULFucntion(self):
+    def mainULFucntion(self,unitsIdList):
         try:
             print("At unit level......")
-            tagmeta = self.getTagmetaForUL(self.unitsIdList)
+            tagmeta = self.getTagmetaForUL(unitsIdList)
 
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
@@ -368,9 +368,10 @@ class apcManager(posting):
 
 
     def createTagAndCalMeta(self):
-        self.mainELfunction()
-        self.mainSLFunction()
-        self.mainULFucntion()
+        for i in self.unitsIdList:
+            self.mainELfunction([i])
+            self.mainSLFunction([i])
+            self.mainULFucntion([i])
 
     # ------------------------- Creating meta level end ---------------------- #
 

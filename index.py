@@ -2,9 +2,11 @@ from apcmanagerlmpl import config,apcManager,os,json
 import paho.mqtt.client as paho
 
 # unitsIdList = ["62f3a6d6f38f4206da2bf0a5","62f3a6ebf38f4206da2bf0a7"]
-# apc = apcManager(unitsIdList)
-# # apc.deleteTagAndCalMeta()
-# # apc.createTagAndCalMeta()
+# unitsIdList = ["635b6f9fef6a59000703f924"]
+unitsIdList = ["5c4ed3f5fe02914642b4d5bc"]
+apc = apcManager(unitsIdList)
+# apc.deleteTagAndCalMeta()
+apc.createTagAndCalMeta()
 # apcapi = apcManagerApi(unitsIdList)
 # # apcapi.ApcData("months","Equipment")
 # apcapi.apcDataIndividualTag("days")
