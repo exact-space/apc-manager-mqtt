@@ -163,7 +163,6 @@ class posting(fetching):
         postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
 
         checkBody = self.getCalculationsFromDataTagId(sumTagName)
-        print(json.dumps(postBodyCal,indent=4))
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
@@ -172,6 +171,8 @@ class posting(fetching):
         if len(checkBody) == 0:
             unitsId = postBodyCal["unitsId"]
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
+            print(json.dumps(postBodyCal,indent=4))
+
             response = requests.post(url,postBodyCal)
 
             if response.status_code == 200 or response.status_code == 204:
@@ -184,6 +185,8 @@ class posting(fetching):
             # print(len(checkBody))
             # print(f"{sumTagName} is already present in calculation so updating...")
             postBodyCal["id"] = checkBody[0]["id"]
+            print(json.dumps(postBodyCal,indent=4))
+
             self.updateCalculations(postBodyCal,postBodyCal["id"])
     
 
@@ -308,13 +311,13 @@ class apcManager(posting):
         self.unitsIdList = unitsIdList
 
     # ------------------------- Creating meta level start ---------------------- #
-    def mainELfunction(self,unitsIdList):
+    def mainELfunction(self):
         """
         Use: to filter data equipment wise.
         """
         try:
             print("At equipment level.....")
-            tagmeta = self.getTagmetaFromUnitsId(unitsIdList)
+            tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 # print(df)
@@ -332,10 +335,10 @@ class apcManager(posting):
             print(traceback.format_exc())
 
 
-    def mainSLFunction(self,unitsIdList):
+    def mainSLFunction(self):
         try:
             print("At system level......")
-            tagmeta = self.getTagmetaForSL(unitsIdList)
+            tagmeta = self.getTagmetaForSL(self.unitsIdList)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 for sysName in df["systemName"].unique():
@@ -353,10 +356,10 @@ class apcManager(posting):
             print(traceback.format_exc())
 
 
-    def mainULFucntion(self,unitsIdList):
+    def mainULFucntion(self):
         try:
             print("At unit level......")
-            tagmeta = self.getTagmetaForUL(unitsIdList)
+            tagmeta = self.getTagmetaForUL(self.unitsIdList)
 
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
@@ -368,10 +371,11 @@ class apcManager(posting):
 
 
     def createTagAndCalMeta(self):
-        for i in self.unitsIdList:
-            self.mainELfunction([i])
-            self.mainSLFunction([i])
-            self.mainULFucntion([i])
+        
+        self.mainELfunction()
+        self.mainSLFunction()
+        self.mainULFucntion()
+
 
     # ------------------------- Creating meta level end ---------------------- #
 
