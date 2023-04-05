@@ -103,7 +103,7 @@ class posting(fetching):
             epqName = postdf.loc[0,"equipment"].replace(" ","")
             mp = postdf.loc[0,"measureProperty"].replace(" ","")
 
-            sumTagName = prefix + "_" + unitsId + "_" +epqName + "_Total_" + mp
+            sumTagName = prefix  + unitsId + "_" +epqName + "_Total_" + mp
             return sumTagName
         
         except:
@@ -216,7 +216,7 @@ class posting(fetching):
             sysInst = str(namedf.loc[0,"systemInstance"])
             mp = namedf.loc[0,"measureProperty"].replace(" ","")
 
-            sumTagName = prefix + "_" + unitsId + "_" +system + "_" + sysInst + "_Total_" + mp
+            sumTagName = prefix + unitsId + "_" +system + "_" + sysInst + "_Total_" + mp
 
             return sumTagName
         
@@ -268,13 +268,13 @@ class posting(fetching):
                 prefix = self.getPrefixFromUnitsId(namedf.loc[0,"unitsId"])
             except:
                 prefix = dataTagId.split("_")[0]
-                
+
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"system"].replace(" ","")
             sysInst = str(namedf.loc[0,"systemInstance"])
             mp = namedf.loc[0,"measureProperty"].replace(" ","")
 
-            sumTagName = prefix + "_" + unitsId + "_" + "Unit_Apc"
+            sumTagName = prefix  + unitsId + "_" + "Unit_Apc"
             return sumTagName
         
         except:
