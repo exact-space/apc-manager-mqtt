@@ -32,6 +32,15 @@ class fetching():
 
 
     # --------------------------- apc meta related start -------------------- #
+    def getPrefixFromUnitsId(self,unitsId):
+        
+        url = config["api"]["meta"]+"/ingestconfigs"
+        ingestdf = pd.DataFrame(requests.get(url).json())
+        ingestdf = ingestdf[(ingestdf["unitsId"]==unitsId) &(ingestdf["PROG_ID_PREFER"]==1.0) ]
+        prefix = ingestdf.loc[ingestdf.index[0],"TAG_PREFIX"]
+        return prefix
+
+
     def getUnitName(self,unitsId):
         try:
             query = {

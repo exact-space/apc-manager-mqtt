@@ -94,7 +94,11 @@ class posting(fetching):
     def createSumTagNameEL(self,postdf):
         try:
             dataTagId = postdf.loc[0,"dataTagId"]
-            prefix = dataTagId.split("_")[0]
+            try:
+                prefix = self.getPrefixFromUnitsId(postdf.loc[0,"unitsId"])
+            except:
+                prefix = dataTagId.split("_")[0]
+                
             unitsId = postdf.loc[0,"unitsId"][-4:]
             epqName = postdf.loc[0,"equipment"].replace(" ","")
             mp = postdf.loc[0,"measureProperty"].replace(" ","")
@@ -202,7 +206,11 @@ class posting(fetching):
     def createSumTagNameSL(self,namedf):
         try:
             dataTagId = namedf.loc[0,"dataTagId"]
-            prefix = dataTagId.split("_")[0]
+            try:
+                prefix = self.getPrefixFromUnitsId(namedf.loc[0,"unitsId"])
+            except:
+                prefix = dataTagId.split("_")[0]
+
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"systemName"].replace(" ","")
             sysInst = str(namedf.loc[0,"systemInstance"])
@@ -256,7 +264,11 @@ class posting(fetching):
     def createSumTagNameUL(self,namedf):
         try:
             dataTagId = namedf.loc[0,"dataTagId"]
-            prefix = dataTagId.split("_")[0]
+            try:
+                prefix = self.getPrefixFromUnitsId(namedf.loc[0,"unitsId"])
+            except:
+                prefix = dataTagId.split("_")[0]
+                
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"system"].replace(" ","")
             sysInst = str(namedf.loc[0,"systemInstance"])
