@@ -328,14 +328,15 @@ class apcManager(posting):
                 df = pd.DataFrame(tagmeta[unitsId])
                 # print(df)
                 for sysName in df["systemName"].unique():
-                    sysNamedf = df[df["systemName"]==sysName]
-                    for eqpName in sysNamedf["equipment"].unique():
-                        
-                        
-                        eqpNamedf = sysNamedf[(sysNamedf["equipment"]==eqpName)].reset_index(drop=True)
-                        
-                        sumTagName = self.postInTagmetaEL(eqpNamedf)
-                        self.postInCal(sumTagName,eqpNamedf)
+                    if sysName != "Generator System":
+                        sysNamedf = df[df["systemName"]==sysName]
+                        for eqpName in sysNamedf["equipment"].unique():
+                            
+                            
+                            eqpNamedf = sysNamedf[(sysNamedf["equipment"]==eqpName)].reset_index(drop=True)
+                            
+                            sumTagName = self.postInTagmetaEL(eqpNamedf)
+                            self.postInCal(sumTagName,eqpNamedf)
                    
         except:
             print(traceback.format_exc())
@@ -348,15 +349,16 @@ class apcManager(posting):
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 for sysName in df["systemName"].unique():
-                    sysNamedf = df[df["systemName"]==sysName]
-                    lim = sysNamedf["systemInstance"].unique().min()
-                    sysNamedf = sysNamedf[sysNamedf["systemInstance"]==lim].reset_index(drop=True)
+                    if sysName != "Generator System":
+                        sysNamedf = df[df["systemName"]==sysName]
+                        lim = sysNamedf["systemInstance"].unique().min()
+                        sysNamedf = sysNamedf[sysNamedf["systemInstance"]==lim].reset_index(drop=True)
 
-                    sysNamedf = df[df["systemName"]==sysName].reset_index(drop=True)
-                    # print(sysNamedf)
-                    sumTagName = self.postInTagmetaSL(sysNamedf)
+                        sysNamedf = df[df["systemName"]==sysName].reset_index(drop=True)
+                        # print(sysNamedf)
+                        sumTagName = self.postInTagmetaSL(sysNamedf)
 
-                    self.postInCal(sumTagName,sysNamedf)
+                        self.postInCal(sumTagName,sysNamedf)
                     
         except:
             print(traceback.format_exc())
