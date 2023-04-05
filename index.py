@@ -4,9 +4,12 @@ import paho.mqtt.client as paho
 unitsIdList = ["62f3a6d6f38f4206da2bf0a5","62f3a6ebf38f4206da2bf0a7"]
 # unitsIdList = ["635b6f9fef6a59000703f924"]
 # unitsIdList = ["62f3a6ebf38f4206da2bf0a7"]
+unitsIdList = ["635b6f9fef6a59000703f924"]
+
 apc = apcManager(unitsIdList)
 # apc.deleteTagAndCalMeta()
 apc.createTagAndCalMeta()
+exit()
 # apcapi = apcManagerApi(unitsIdList)
 # # apcapi.ApcData("months","Equipment")
 # apcapi.apcDataIndividualTag("days")

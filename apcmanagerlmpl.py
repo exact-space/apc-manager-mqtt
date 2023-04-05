@@ -154,7 +154,8 @@ class posting(fetching):
             "dataTagId":sumTagName,
             "unitsId":postdf.loc[0,"unitsId"]
         }
-
+        # print("publishBodyCal")
+        # print(publishBodyCal)
         return publishBodyCal
     
 
@@ -163,6 +164,8 @@ class posting(fetching):
         postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
 
         checkBody = self.getCalculationsFromDataTagId(sumTagName)
+        # print("checkbody")
+        # print(json.dumps(checkBody,indent=4))
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
@@ -171,9 +174,11 @@ class posting(fetching):
         if len(checkBody) == 0:
             unitsId = postBodyCal["unitsId"]
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
+            # url = "http://13.251.5.125/exactapi/calculations"
+            # print(json.dumps(postBodyCal,indent=4))
+            response = requests.post(url,postBodyCal)
             print(json.dumps(postBodyCal,indent=4))
 
-            response = requests.post(url,postBodyCal)
 
             if response.status_code == 200 or response.status_code == 204:
                 print(f"{sumTagName} Calcumations body posting successfull...")
@@ -185,9 +190,10 @@ class posting(fetching):
             # print(len(checkBody))
             # print(f"{sumTagName} is already present in calculation so updating...")
             postBodyCal["id"] = checkBody[0]["id"]
-            print(json.dumps(postBodyCal,indent=4))
 
             self.updateCalculations(postBodyCal,postBodyCal["id"])
+            print(json.dumps(postBodyCal,indent=4))
+
     
 
     # -------------------- Equipment level End ------------- #

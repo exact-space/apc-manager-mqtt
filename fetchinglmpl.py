@@ -110,10 +110,7 @@ class fetching():
                 query ={
                     "unitsId":unitsId,
                     "measureProperty":"Power",
-                    "or":[
-                    {"measureType":"Load"},
-                    {"measureType":"Apc"},
-                    ]
+                    "measureType":"Apc"
                 }
                 if not field:
                     urlQuery = config["api"]["meta"] + '/tagmeta?filter={"where":' + json.dumps(query) + '}'  
