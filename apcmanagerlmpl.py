@@ -174,14 +174,17 @@ class posting(fetching):
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
             print(f"found multiple traces of {sumTagName}")
-
+            return
+        
         if len(checkBody) == 0:
             unitsId = postBodyCal["unitsId"]
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
             # url = "http://13.251.5.125/exactapi/calculations"
+            # print("before")
             # print(json.dumps(postBodyCal,indent=4))
-            response = requests.post(url,postBodyCal)
-            print(json.dumps(postBodyCal,indent=4))
+            response = requests.post(url,json = postBodyCal)
+            # print("after")
+            # print(json.dumps(postBodyCal,indent=4))
 
 
             if response.status_code == 200 or response.status_code == 204:
@@ -194,7 +197,7 @@ class posting(fetching):
             # print(len(checkBody))
             # print(f"{sumTagName} is already present in calculation so updating...")
             postBodyCal["id"] = checkBody[0]["id"]
-
+            # print(json.dumps(postBodyCal,indent=4))
             self.updateCalculations(postBodyCal,postBodyCal["id"])
             print(json.dumps(postBodyCal,indent=4))
 
@@ -478,6 +481,7 @@ class apcManagerApi(apcManager):
             return dic[string]
         except:
             print(traceback.format_exc())
+
 
     def getValidTimeFrame(self,timeType):
         try:
