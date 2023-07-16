@@ -47,10 +47,10 @@ deleteMeta = "apcManager/deleteMeta"
 createMeta = "apcManager/createMeta"
 
 unitsIdList = ["635b6f9fef6a59000703f924"]
-
+body = {"unitsIdList":unitsIdList}
 while True:
     ip = input("enter command...")
     if ip == "d":
-       client.publish(deleteMeta,json.dumps(unitsIdList))
+       client.publish(deleteMeta,json.dumps(body))
     elif ip == "c":
-       client.publish(createMeta,json.dumps(unitsIdList))
+       client.publish(createMeta,json.dumps(body))
