@@ -120,9 +120,9 @@ class fetching():
                     "unitsId":unitsId,
                     "measureProperty":"Power",
                     "or":[
-                    {"measureType":"Current"},
-                    # {"measureType":"Apc"},
-                    {"measureType":"Power"},
+                    # {"measureType":"Current"},
+                    {"measureType":"Apc"},
+                    # {"measureType":"Power"},
                     ]
                 }
                 if not field:
