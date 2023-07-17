@@ -15,16 +15,14 @@ import itertools
 import traceback
 from fetchinglmpl import fetching
 
-try:
-    import platform
-    version = platform.python_version().split(".")[0]
-    if version == "3":
-        import app_config.app_config as cfg
-    elif version == "2":
-        import app_config as cfg
-    config = cfg.getconfig()
-except:
-    from config import *
+
+import platform
+version = platform.python_version().split(".")[0]
+if version == "3":
+    import app_config.app_config as cfg
+elif version == "2":
+    import app_config as cfg
+config = cfg.getconfig()
 
 
 
@@ -94,16 +92,15 @@ class posting(fetching):
     def createSumTagNameEL(self,postdf):
         try:
             dataTagId = postdf.loc[0,"dataTagId"]
-            try:
-                prefix = self.getPrefixFromUnitsId(postdf.loc[0,"unitsId"])[:-1]
-            except:
-                prefix = dataTagId.split("_")[0]
+            
+            prefix = dataTagId.split("_")[0]
                 
             unitsId = postdf.loc[0,"unitsId"][-4:]
             epqName = postdf.loc[0,"equipment"].replace(" ","")
+            systemName = postdf.loc[0,"systemName"].replace(" ","")
             mp = postdf.loc[0,"measureProperty"].replace(" ","")
-
-            sumTagName = prefix +"_" + unitsId + "_" +epqName + "_Total_" + mp
+            
+            sumTagName = prefix +"_" + unitsId + "_" + systemName + "_" + epqName + "_Total_" + mp
             return sumTagName
         
         except:
@@ -180,11 +177,10 @@ class posting(fetching):
             unitsId = postBodyCal["unitsId"]
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
             # url = "http://13.251.5.125/exactapi/calculations"
-            # print("before")
-            # print(json.dumps(postBodyCal,indent=4))
+            print(json.dumps(postBodyCal,indent=4))
+            print("*" * 60)
             response = requests.post(url,json = postBodyCal)
-            # print("after")
-            # print(json.dumps(postBodyCal,indent=4))
+            
 
 
             if response.status_code == 200 or response.status_code == 204:
@@ -209,10 +205,8 @@ class posting(fetching):
     def createSumTagNameSL(self,namedf):
         try:
             dataTagId = namedf.loc[0,"dataTagId"]
-            try:
-                prefix = self.getPrefixFromUnitsId(namedf.loc[0,"unitsId"])[:-1]
-            except:
-                prefix = dataTagId.split("_")[0]
+            
+            prefix = dataTagId.split("_")[0]
 
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"systemName"].replace(" ","")
@@ -267,11 +261,8 @@ class posting(fetching):
     def createSumTagNameUL(self,namedf):
         try:
             dataTagId = namedf.loc[0,"dataTagId"]
-            try:
-                prefix = self.getPrefixFromUnitsId(namedf.loc[0,"unitsId"])[:-1]
-
-            except:
-                prefix = dataTagId.split("_")[0]
+            
+            prefix = dataTagId.split("_")[0]
 
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"system"].replace(" ","")
@@ -342,13 +333,11 @@ class apcManager(posting):
             tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
-                # print(df)
+                print(df["systemName"].unique())
                 for sysName in df["systemName"].unique():
                     if sysName != "Generator System":
                         sysNamedf = df[df["systemName"]==sysName]
                         for eqpName in sysNamedf["equipment"].unique():
-                            
-                            
                             eqpNamedf = sysNamedf[(sysNamedf["equipment"]==eqpName)].reset_index(drop=True)
                             
                             sumTagName = self.postInTagmetaEL(eqpNamedf)
