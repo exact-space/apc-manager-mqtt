@@ -279,7 +279,8 @@ class fetching():
             for idx,response in enumerate(requests):
                 if response.status_code==200:
                     # print("got tagmeta successfully...")
-                    tagmeta.append(json.loads(response.content)[0])
+                    tagmeta += json.loads(response.content)
+
                 else:
                     print("Not getting tagmeta SL Level successfully...")
                     print(response.status_code)

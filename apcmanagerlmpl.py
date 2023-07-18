@@ -162,11 +162,12 @@ class posting(fetching):
 
 
     def postInCal(self,sumTagName,postdf):
+        print("running posting function")
         postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
 
         checkBody = self.getCalculationsFromDataTagId(sumTagName)
-        # print("checkbody")
-        # print(json.dumps(checkBody,indent=4))
+        print("checkbody")
+        print(json.dumps(checkBody,indent=4))
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
@@ -178,11 +179,10 @@ class posting(fetching):
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
             # url = "http://13.251.5.125/exactapi/calculations"
             print(json.dumps(postBodyCal,indent=4))
-            print("*" * 60)
             response = requests.post(url,json = postBodyCal)
             
 
-
+            
             if response.status_code == 200 or response.status_code == 204:
                 print(f"{sumTagName} Calcumations body posting successfull...")
 
@@ -196,6 +196,8 @@ class posting(fetching):
             # print(json.dumps(postBodyCal,indent=4))
             self.updateCalculations(postBodyCal,postBodyCal["id"])
             print(json.dumps(postBodyCal,indent=4))
+
+        print("*" * 60)
 
     
 
@@ -449,7 +451,7 @@ class apcManager(posting):
 
         self.delDataInTagmeta(tagmeta,"tagmeta")
         self.delDataInTagmeta(tagmetaCal,"cal")
-        
+
     # ------------------------- Deleting meta End --------------------------- # 
     
 
