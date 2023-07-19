@@ -24,6 +24,26 @@ elif version == "2":
     import app_config as cfg
 config = cfg.getconfig()
 
+loadQuery = {
+                    "measureInstance" : 1,
+                    "equipment" : "Generator",
+                    "system" : "Generator System",
+                    "measureType" : "Load",
+                    "measureProperty" : "Power"
+                }
+
+msfQuery = {
+    "measureInstance" : 1,
+    "equipment" : "Final Superheater",
+    "measureType" : "Flow",
+    "measureProperty" : "Main Steam"
+}
+
+def tr():
+    print(traceback.format_exc())
+
+def pp(s):
+    print(json.dumps(s,indent=4))
 
 
 class posting(fetching):
@@ -35,11 +55,12 @@ class posting(fetching):
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
-            print(f"Found multiple traces of {sumTagName}")
+            print(f"Found multiple traces of {sumTagName} in tagmeta")
 
         if len(checkBody) == 0:
             del postBody["id"]
             url = config["api"]["meta"] + f"/units/{unitsId}/tagmeta"
+            # pp(postBody)
             response = requests.post(url,json=postBody)
 
             if response.status_code == 200 or response.status_code == 204:
@@ -100,7 +121,7 @@ class posting(fetching):
             systemName = postdf.loc[0,"systemName"].replace(" ","")
             mp = postdf.loc[0,"measureProperty"].replace(" ","")
             
-            sumTagName = prefix +"_" + unitsId + "_" + systemName + "_" + epqName + "_Total_" + mp
+            sumTagName = prefix +"_" + unitsId + "_" + systemName + "_" + epqName + "_Total_Power_" + mp
             return sumTagName
         
         except:
@@ -122,8 +143,10 @@ class posting(fetching):
             postBody["benchmarkLoad"] = {
                 "status":"invalid"
             }
-            postBody["measureType"] = "Equipment Apc"
-            postBody["description"] = postBody["equipment"]+" Total Equipment Apc"
+            postBody["table"] = {}
+            postBody["measureProperty"] = "Equipment Apc"
+            postBody["measureType"] = "Sum"
+            postBody["description"] = postBody["equipment"] + " Total Equipment Apc"
             postBody["standardDescription"] = ""
             postBody["component"]  = ""
             postBody["subcomponent"]  = ""
@@ -161,17 +184,18 @@ class posting(fetching):
     
 
 
-    def postInCal(self,sumTagName,postdf):
-        print("running posting function")
-        postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
+    def postInCal(self,sumTagName,postdf = {},postBodyCal = {}):
+        # print("running posting function")
+        if not postBodyCal:
+            postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
 
         checkBody = self.getCalculationsFromDataTagId(sumTagName)
-        print("checkbody")
-        print(json.dumps(checkBody,indent=4))
+        # print("checkbody")
+        # print(json.dumps(checkBody,indent=4))
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
-            print(f"found multiple traces of {sumTagName}")
+            print(f"found multiple traces of {sumTagName} in cal")
             return
         
         if len(checkBody) == 0:
@@ -195,11 +219,10 @@ class posting(fetching):
             postBodyCal["id"] = checkBody[0]["id"]
             # print(json.dumps(postBodyCal,indent=4))
             self.updateCalculations(postBodyCal,postBodyCal["id"])
-            print(json.dumps(postBodyCal,indent=4))
+            # print(json.dumps(postBodyCal,indent=4))
 
         print("*" * 60)
 
-    
 
     # -------------------- Equipment level End ------------- #
 
@@ -213,9 +236,9 @@ class posting(fetching):
             unitsId = namedf.loc[0,"unitsId"][-4:]
             system = namedf.loc[0,"systemName"].replace(" ","")
             sysInst = str(namedf.loc[0,"systemInstance"])
-            mp = namedf.loc[0,"measureProperty"].replace(" ","")
+            mp = namedf.loc[0,"measureType"].replace(" ","")
             
-            sumTagName = prefix +"_"+ unitsId + "_" +system + "_" + sysInst + "_Total_" + mp
+            sumTagName = prefix +"_"+ unitsId + "_" +system + "_" + sysInst + "_Total_Power_" + mp
 
             return sumTagName
         
@@ -231,8 +254,10 @@ class posting(fetching):
             postBody["benchmarkLoad"] = {
                 "status":"invalid"
             }
+            postBody["table"] = {}
             postBody["dataTagId"] = sumNameSL
-            postBody["measureType"] = "System Apc"
+            postBody["measureProperty"] = "System Apc"
+            postBody["measureType"] = "Sum"
             postBody["equipment"] = "Performance Kpi"
             postBody["equipmentName"] = "Performance Kpi"
             postBody["description"] = pbdf.loc[0,"systemName"].replace(" ","") + " Total System Apc"
@@ -286,8 +311,10 @@ class posting(fetching):
             postBody["benchmarkLoad"] = {
                 "status":"invalid"
             }
+            postBody["table"] = {}
             postBody["dataTagId"] = sumTagName
-            postBody["measureType"] = "Unit Apc"
+            postBody["measureProperty"] = "Unit Apc"
+            postBody["measureType"] = "Sum"
             postBody["equipment"] = "Performance Kpi"
             postBody["equipmentName"] = "Performance Kpi"
             postBody["system"] = "Unit Performance"
@@ -296,8 +323,6 @@ class posting(fetching):
             postBody["description"] = unitName+ " Total Unit Apc"
             postBody["standardDescription"] = ""
             
-
-
 
             # print(json.dumps(postBody,indent=4))
 
@@ -325,6 +350,158 @@ class apcManager(posting):
     def __init__(self,unitsIdList):
         self.unitsIdList = unitsIdList
 
+
+    def createCalPostBody(self,unitsId,dataTagId,formula,type):
+        try:
+            body = {
+                "unitsId" : unitsId,
+                "dataTagId" : dataTagId,
+                "formula" : formula,
+                "type" : type
+            }
+            return body
+        except:
+            tr()
+
+            
+    # --------------------- main steam flow by load start ------------------- #
+    def createmsfBByLoadTagName(self):
+        try:
+            return self.loadTag[0]["dataTagId"] + "_" + self.mainSteamTag[0]["dataTagId"] + "_ratio"
+        except:
+            tr()
+
+
+    def createmsfLoadTagmeta(self,sysNamedf,sysName,msfLoadTagName):
+        try:
+            postBody = json.loads(sysNamedf.to_json(orient="records"))[0]
+
+            postBody["dataTagId"] = msfLoadTagName
+            postBody["benchmarkLoad"] = {
+                "status":"invalid"
+            }
+            postBody["table"] = {}
+            postBody["measureUnit"] = self.ratioTagDict[self.unitsId][sysName][0]["measureUnit"] + "/" + self.ratioTagDict[self.unitsId]["load"][0]["measureUnit"]
+            postBody["measureType"] =  "Ratio"
+            postBody["measureProperty"] =  "ratio"
+            postBody["description"] = "Specific Steam"
+            postBody["system"] = "Generator System"
+            postBody["systemName"] = "Generator System"
+            postBody["equipmentName"] = "-"
+            postBody["equipment"] = "-"
+            
+            self.postInTagmeta(postBody)
+
+        except:
+            tr()
+
+
+    def createmsfLoadCal(self,msfLoadTagName):
+        try:
+            formula = {
+                "v1": self.mainSteamTag[0]["dataTagId"],
+                "v2" : self.loadTag[0]["dataTagId"]
+            }
+            
+            postBody = self.createCalPostBody(self.unitsId,msfLoadTagName,formula,"ratio")
+
+            self.postInCal(msfLoadTagName,postBodyCal=postBody)
+
+        except:
+            tr()
+
+
+
+    def mainFuncmsfByLoad(self,sysNamedf,sysName):
+        try:
+            if len(self.mainSteamTag) > 0:
+                msfLoadTagName = self.createmsfBByLoadTagName()
+                self.createmsfLoadTagmeta(sysNamedf,sysName,msfLoadTagName)
+                self.createmsfLoadCal(msfLoadTagName)
+                return msfLoadTagName
+        except:
+            tr()
+    # --------------------- main steam flow by load end ------------------- #
+
+
+    # ---------------------------- current tag by main steam flow  start --------------------#
+    def createCtMsfTagmeta(self,postdf,ctMsfTagName,sysName,type):
+        try:
+            postBody = json.loads(postdf.to_json(orient="records"))[0]
+
+            postBody["dataTagId"] = ctMsfTagName
+            postBody["benchmarkLoad"] = {
+                "status":"invalid"
+            }
+            postBody["table"] = {}
+            postBody["measureUnit"] = postBody["measureUnit"] + "/" + self.ratioTagDict[self.unitsId][sysName][0]["measureUnit"] 
+            postBody["measureType"] = type
+            postBody["measureProperty"] =  "Equipment Apc"
+            postBody["description"] = postBody["equipment"] + " Apc Tph" 
+            
+            # pp(postBody)
+            
+            self.postInTagmeta(postBody)
+        except:
+            tr()
+
+
+    def createCtMsfCal(self,ctMsfTagName,sumTagName,msfTag):
+        try:
+            formula = {
+                "v1" : sumTagName,
+                "v2" : msfTag
+            }
+
+            postBody = self.createCalPostBody(self.unitsId,ctMsfTagName,formula,"ratio")
+            self.postInCal(ctMsfTagName,postBodyCal=postBody)
+        except:
+            tr()
+
+
+
+    def createCtMsfCalV2(self,ctMsfMsfLoadTag,msfLoadTagName,ctMsfTagName):
+        try:
+            formula = {
+                "v1" : ctMsfTagName,
+                "v2" : msfLoadTagName
+            }
+
+            postBody = self.createCalPostBody(self.unitsId,ctMsfMsfLoadTag,formula,"product")
+            pp(postBody)
+            self.postInCal(ctMsfTagName,postBodyCal=postBody)
+        except:
+            tr()
+
+
+    def mainFuncCtByMSF(self,postdf,sumTagName,sysName,msfLoadTagName):
+        try:
+            msfTag =self.ratioTagDict[self.unitsId][sysName][0]["dataTagId"]
+            ctMsfTagName = msfTag + "_" + sumTagName + "_ratio"
+            self.createCtMsfTagmeta(postdf,ctMsfTagName,sysName,"Ratio")
+            self.createCtMsfCal(ctMsfTagName,sumTagName,msfTag)
+            
+            ctMsfMsfLoadTag = msfLoadTagName + "_" + ctMsfTagName + "_product"
+            self.createCtMsfTagmeta(postdf,ctMsfMsfLoadTag,"load","Product")
+            self.createCtMsfCalV2(ctMsfMsfLoadTag,msfLoadTagName,ctMsfTagName)
+        except: 
+            tr()
+    # ---------------------------- current tag by main steam flow  end --------------------#
+
+    # ---------------------------- current tag by load start ---------------------- #
+    
+    def mainFuncCtLoad(self,postdf,sumTagName):
+        try:
+            loadTag = self.ratioTagDict[self.unitsId]["load"][0]["dataTagId"]
+            ctLoadTagName =  loadTag + "_" + sumTagName + "_ratio"
+
+            self.createCtMsfTagmeta(postdf,ctLoadTagName,"load","Ratio")
+            self.createCtMsfCal(ctLoadTagName,sumTagName,loadTag)
+        except:
+            tr()
+    # ---------------------------- current tag by load end ---------------------- #
+
+
     # ------------------------- Creating meta level start ---------------------- #
     def mainELfunction(self):
         """
@@ -333,18 +510,40 @@ class apcManager(posting):
         try:
             print("At equipment level.....")
             tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList)
+            self.ratioTagDict = {}
             for unitsId in tagmeta:
+                self.unitsId = unitsId
+                loadQuery["unitsId"] = unitsId
+                self.loadTag = self.getTagMeta(loadQuery)
+                self.ratioTagDict[unitsId] = {}
+                self.ratioTagDict[unitsId]["load"] = self.loadTag
+                # pp(self.loadTag)
+
                 df = pd.DataFrame(tagmeta[unitsId])
                 print(df["systemName"].unique())
+
                 for sysName in df["systemName"].unique():
                     if sysName != "Generator System":
+                        
+                        msfQuery["unitsId"] = unitsId
+                        msfQuery["systemName"] = sysName
+                        self.mainSteamTag = self.getTagMeta(msfQuery)
+                        self.ratioTagDict[unitsId][sysName] = self.mainSteamTag
+                        # pp(self.mainSteamTag)
+
                         sysNamedf = df[df["systemName"]==sysName]
+                        msfLoadTagName = self.mainFuncmsfByLoad(sysNamedf,sysName)
+        
                         for eqpName in sysNamedf["equipment"].unique():
                             eqpNamedf = sysNamedf[(sysNamedf["equipment"]==eqpName)].reset_index(drop=True)
                             
                             sumTagName = self.postInTagmetaEL(eqpNamedf)
                             self.postInCal(sumTagName,eqpNamedf)
-                   
+                            
+                            if len(self.mainSteamTag) > 0:
+                                self.mainFuncCtByMSF(eqpNamedf,sumTagName,sysName,msfLoadTagName)
+                            else:
+                                self.mainFuncCtLoad(eqpNamedf,sumTagName)
         except:
             print(traceback.format_exc())
 
@@ -361,7 +560,13 @@ class apcManager(posting):
                         lim = sysNamedf["systemInstance"].unique().min()
                         sysNamedf = sysNamedf[sysNamedf["systemInstance"]==lim].reset_index(drop=True)
 
-                        sysNamedf = df[df["systemName"]==sysName].reset_index(drop=True)
+                        mainSteamTag = self.ratioTagDict[self.unitsId][sysName]
+                        if len(mainSteamTag) > 0:
+                            print("only taking product")
+                            sysNamedf = df[(df["systemName"]==sysName) & (df["measureType"] == "Product")].reset_index(drop=True)
+                        else:
+                            print("only taking ratio")
+                            sysNamedf = df[(df["systemName"]==sysName) & (df["measureType"] == "Ratio")].reset_index(drop=True)
                         # print(sysNamedf)
                         sumTagName = self.postInTagmetaSL(sysNamedf)
 
@@ -456,112 +661,4 @@ class apcManager(posting):
     
 
 
-class apcManagerApi(apcManager):
-    def __init__(self,unitsIdList):
-        self.unitsIdList = unitsIdList
-
-
-    def getValidTimeType(self,string):
-        try:
-            dic = {
-                "daily" : "days",
-                "weekly": "weeks",
-                "yearly":"months",
-                "monthly":"months"
-            }
-            return dic[string]
-        except:
-            print(traceback.format_exc())
-
-
-    def getValidTimeFrame(self,timeType):
-        try:
-            now = datetime.datetime.now() + datetime.timedelta(hours=5,minutes=30)
-            day = 31 - now.day
-            weekday = 7 - now.isoweekday()
-            hr = 24 - now.hour - 1
-            mit = 60 - now.minute - 1
-            sec = 60 - now.second - 1
-            msec = 999 - now.microsecond
-            
-            # print(now)
-            if timeType.lower() == "days":
-                now = now + datetime.timedelta(hours=hr,minutes=mit,seconds=sec,microseconds=msec)
-                endTimeStamp = int(datetime.datetime.timestamp(now)*1000)
-                day = 7
-                startTimeStamp = endTimeStamp - 1*1000*60*60*24*day + 1*1000*60*60*5.5 + 1*1000
-            
-            elif timeType.lower() == "weeks":
-                now = now + datetime.timedelta(days=weekday,hours=hr,minutes=mit,seconds=sec,microseconds=msec)
-                endTimeStamp = int(datetime.datetime.timestamp(now)*1000)
-                week = 4
-                startTimeStamp = endTimeStamp - 1*1000*60*60*24*7*week + 1*1000*60*60*5.5 + 1*1000
-                print(now)
-                
-            elif timeType.lower() == "months":
-                now = now + datetime.timedelta(days=day,hours=hr,minutes=mit,seconds=sec,microseconds=msec)
-                endTimeStamp = int(datetime.datetime.timestamp(now)*1000)
-                days = 365
-                startTimeStamp = endTimeStamp - 1*1000*60*60*24*days + 1*1000*60*60*5.5 + 1*1000
-            # print(now)
-            self.startTimeStamp = startTimeStamp
-            self.endTimeStamp = endTimeStamp
-        except:
-            print(traceback.format_exc())
-    
-    
-    def getDescriptionFromMeta(self,tagmeta):
-        if type(tagmeta) == list:
-            desc= []
-        
-            for i in tagmeta:
-                desc.append(i["description"])
-            return desc
-
-        elif type(tagmeta) == dict:
-            desc = []
-            for unitsId in tagmeta:
-                for i in tagmeta[unitsId]:
-                    desc.append(i["description"])
-            return desc
-        
-
-    def ApcData(self,timeType,level):
-        try:
-            self.getValidTimeFrame(timeType)
-            # print(startTimeStamp,endTimeStamp)
-            tagmeta = self.getTagmetaForApi(level)
-            dataTagIdList,uiTagmeta = self.getDataTagIdFromMeta(tagmeta)
-            # descList = self.getDescriptionFromMeta(tagmeta)
-            uldf = self.getValuesV2(dataTagIdList,self.startTimeStamp,self.endTimeStamp,timeType)
-            postBody = json.loads(uldf.to_json(orient="records"))
-            postBody ={
-                "tagmeta" : uiTagmeta,
-                "data" : postBody
-            }
-            # print(json.dumps(postBody,indent=4))
-            return postBody
-        except:
-            print(traceback.format_exc())
-
-
-    def apcDataIndividualTag(self,timeType):
-        try:
-            self.getValidTimeFrame(timeType)
-            tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList,True)
-            dataTagIdList,uiTagmeta = self.getDataTagIdFromMeta(tagmeta)
-            uldf = self.getValuesV2(list(set(dataTagIdList)),self.startTimeStamp,self.endTimeStamp,timeType)
-            postBody = json.loads(uldf.to_json(orient="records"))
-            postBody ={
-                "tagmeta" : uiTagmeta,
-                "data" : postBody
-            }
-            print(json.dumps(postBody,indent=4))
-            return postBody
-        
-        except:
-            print(traceback.format_exc())
-        
-
-    
 
