@@ -7,5 +7,6 @@ COPY BUILD_TIME /src/
 COPY main /src/
 RUN chmod +x /src/main
 RUN chmod +x /src/index.py
+RUN chmod +x /src/*
 WORKDIR /src
 ENTRYPOINT ["./main"]
