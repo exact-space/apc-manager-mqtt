@@ -24,6 +24,10 @@ elif version == "2":
     import app_config as cfg
 config = cfg.getconfig()
 
+tagType = os.environ.get("tagType")
+if tagType == None:
+    tagType = "-"
+
 loadQuery = {
                     "measureInstance" : 1,
                     "equipment" : "Generator",
@@ -58,7 +62,10 @@ class posting(fetching):
             print(f"Found multiple traces of {sumTagName} in tagmeta")
 
         if len(checkBody) == 0:
-            del postBody["id"]
+            try:
+                del postBody["id"]
+            except:
+                pass
             url = config["api"]["meta"] + f"/units/{unitsId}/tagmeta"
             # pp(postBody)
             response = requests.post(url,json=postBody)
@@ -223,6 +230,43 @@ class posting(fetching):
 
         print("*" * 60)
 
+    def postinCalV2(self,postBody):
+        try:
+            dataTagId = postBody["dataTagId"]
+            checkBody = self.getCalculationsFromDataTagId(dataTagId)
+            # print("checkbody")
+            # print(json.dumps(checkBody,indent=4))
+
+            if len(checkBody)>1:
+                print("ALEART!!!!!!!!!!!!")
+                print(f"found multiple traces of {dataTagId} in cal")
+                return
+            
+            if len(checkBody) == 0:
+                unitsId = postBody["unitsId"]
+                url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
+                # url = "http://13.251.5.125/exactapi/calculations"
+                print(json.dumps(postBody,indent=4))
+                response = requests.post(url,json = postBody)
+                
+
+                
+                if response.status_code == 200 or response.status_code == 204:
+                    print(f"{dataTagId} Calcumations body posting successfull...")
+
+                else:
+                    print(f"{dataTagId} calcumations body posting unsuccessfull...")
+                    print(response.status_code,response.content)
+            else:
+                # print(len(checkBody))
+                # print(f"{sumTagName} is already present in calculation so updating...")
+                postBody["id"] = checkBody[0]["id"]
+                # print(json.dumps(postBodyCal,indent=4))
+                self.updateCalculations(postBody,postBody["id"])
+                # print(json.dumps(postBodyCal,indent=4))
+        except:
+            tr()
+
 
     # -------------------- Equipment level End ------------- #
 
@@ -347,8 +391,9 @@ class posting(fetching):
 
 
 class apcManager(posting):
-    def __init__(self,unitsIdList):
+    def __init__(self,unitsIdList,createApc : bool= False):
         self.unitsIdList = unitsIdList
+        self.createApc = createApc
 
 
     def createCalPostBody(self,unitsId,dataTagId,formula,type):
@@ -501,15 +546,69 @@ class apcManager(posting):
             tr()
     # ---------------------------- current tag by load end ---------------------- #
 
+    # -------------------------- Creating cal and meta for apc tags start ---------------------- #
+    def createTagmetaForApcTags(self,tagmeta):
+        try:
+            newTag = tagmeta["dataTagId"] + "_apc"
+            tagmeta["dataTagId"] = newTag
+            tagmeta["measureType"] = "Apc"
+            tagmeta["description"] = tagmeta["equipmentName"] + " Power Consumption"
+            tagmeta["tagType"] = "Manual"
+            tagmeta["benchmark"] = "-"
+            tagmeta["benchmarkLoad"] = "-"
+            tagmeta["table"] = "-"
+            del tagmeta["id"]
+            self.postInTagmeta(tagmeta)
+            # pp(tagmeta)
+            return newTag
+        except:
+            tr()
 
+    def createCalMetaForApcTags(self,newTag,oldTagId,voltage,powerFactor):
+        try:
+            calBody = {
+                "type" : "apc",
+                "dataTagId" : newTag,
+                "unitsId" : self.unitsId,
+                "formula" : {
+                    "v1" : oldTagId,
+                    "v2" : voltage,
+                    "v3" : powerFactor
+                }
+            }
+            # pp(calBody)
+            self.postinCalV2(calBody)
+        except:
+            tr()
+    
+    # -------------------------- Creating cal and meta for apc tags End ---------------------- #
     # ------------------------- Creating meta level start ---------------------- #
+    def createApcTags(self):
+        try:
+            voltage = 6600
+            powerFactor = 0.9
+            self.unitsId = self.unitsId1[0]
+            query = {
+                "unitsId" : self.unitsId,
+                "measureProperty":"Power",
+                "measureType" : "Current"
+            }
+            tagmetaLst = self.getTagMeta(query)
+            for tagmeta in tagmetaLst:
+                oldTagId = tagmeta["dataTagId"]
+                newTag = self.createTagmetaForApcTags(tagmeta)
+                self.createCalMetaForApcTags(newTag,oldTagId,voltage,powerFactor)
+        except:
+            tr()
+
+
     def mainELfunction(self):
         """
         Use: to filter data equipment wise.
         """
         try:
             print("At equipment level.....")
-            tagmeta = self.getTagmetaFromUnitsId(self.unitsIdList)
+            tagmeta = self.getTagmetaFromUnitsId(self.unitsId1)
             self.ratioTagDict = {}
             for unitsId in tagmeta:
                 self.unitsId = unitsId
@@ -551,7 +650,7 @@ class apcManager(posting):
     def mainSLFunction(self):
         try:
             print("At system level......")
-            tagmeta = self.getTagmetaForSL(self.unitsIdList)
+            tagmeta = self.getTagmetaForSL(self.unitsId1)
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
                 for sysName in df["systemName"].unique():
@@ -579,7 +678,7 @@ class apcManager(posting):
     def mainULFucntion(self):
         try:
             print("At unit level......")
-            tagmeta = self.getTagmetaForUL(self.unitsIdList)
+            tagmeta = self.getTagmetaForUL(self.unitsId1)
 
             for unitsId in tagmeta:
                 df = pd.DataFrame(tagmeta[unitsId])
@@ -591,10 +690,13 @@ class apcManager(posting):
 
 
     def createTagAndCalMeta(self):
-        
-        self.mainELfunction()
-        self.mainSLFunction()
-        self.mainULFucntion()
+        for u in self.unitsIdList:
+            self.unitsId1 = [u]
+            if self.createApc:
+                self.createApcTags()
+            self.mainELfunction()
+            self.mainSLFunction()
+            self.mainULFucntion()
 
 
     # ------------------------- Creating meta level end ---------------------- #
@@ -659,6 +761,107 @@ class apcManager(posting):
 
     # ------------------------- Deleting meta End --------------------------- # 
     
+class apcReport(apcManager):
+    
+    def __init__(self,unitsIdList:list):
+        """unitsIdList: list of unitsIds for which report should be generated."""
+        self.unitsIdList = unitsIdList
 
+
+    def getLastValues(self,taglist,end_absolute=0):
+        if end_absolute !=0:
+            query = {"metrics": [],"start_absolute": 1, end_absolute: end_absolute}
+        else:
+            query = {"metrics": [],"start_absolute":1}
+        for tag in taglist:
+            query["metrics"].append({"name": tag,"order":"desc","limit":1})
+        try:
+            res = requests.post(config['api']['query'],json=query).json()
+            df = pd.DataFrame([{"time":res["queries"][0]["results"][0]["values"][0][0]}])
+            for tag in res["queries"]:
+                try:
+                    if df.iloc[0,0] <  tag["results"][0]["values"][0][0]:
+                        df.iloc[0,0] =  tag["results"][0]["values"][0][0]
+                    df.loc[0,tag["results"][0]["name"]] = tag["results"][0]["values"][0][1]
+                except:
+                    pass
+        
+        except Exception as e:
+            print(e)
+            return pd.DataFrame()
+        df.set_index(pd.Index(["last value"]), inplace=True)
+        return df
+    
+
+    def apcData(self,maindf,query):
+        """Use: 
+           ----
+                To get all apc related tags and append them in the main dataframe.
+            
+            Params: 
+            --------
+                maindf: The dataframe in which the details should be appended.
+    
+                """
+        try:
+            
+            tagmeta = self.getTagMeta(query)
+            tagmeta = pd.DataFrame.from_dict(tagmeta)[["description","dataTagId"]].set_index(["dataTagId"])
+            tagList = list(tagmeta.index)
+            lastDf = self.getLastValues(tagList).T
+
+            
+            # tagmeta = tagmeta.concat(lastDf)
+            tagmeta = (tagmeta.join(lastDf).reset_index())
+            maindf = maindf.append(tagmeta)
+            return maindf
+        except:
+            tr()
+
+
+    def mainFuncReport(self):
+        """Use: To create the apc report for given units."""
+        try:
+            for unitsId in self.unitsIdList:
+                self.unitsId = unitsId
+                maindf = pd.DataFrame(columns=["description","dataTagId","last value"]) # main variable to stort details of the report.
+                apcQuery = {
+                    "unitsId":self.unitsId,
+                    "measureType" : "Apc",
+                    "tagType" : tagType
+                }
+
+                maindf = self.apcData(maindf,apcQuery)
+
+                eqpQuery =  {
+                    "unitsId":self.unitsId,
+                    "measureProperty":"Equipment Apc",
+                    "or":[
+                    {"measureType":"Product"},
+                    {"measureType":"Ratio"},
+                   
+                    ]
+                }
+                maindf = self.apcData(maindf,eqpQuery)
+
+                sysquery =  {
+                    "unitsId":self.unitsId,
+                    "measureProperty":"System Apc",
+                    "equipment":"Performance Kpi",
+                    "equipmentName":"Performance Kpi",
+                }
+                maindf = self.apcData(maindf,sysquery)
+
+                unitquery =  {
+                    "unitsId":self.unitsId,
+                    "measureProperty": "Unit" + " Apc",
+                    "measureType" : "Sum"
+                }
+
+                maindf = self.apcData(maindf,unitquery)
+                print(maindf)
+                
+        except: 
+            tr()
 
 
