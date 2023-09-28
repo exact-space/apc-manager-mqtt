@@ -1,6 +1,5 @@
 #FROM dev.exactspace.co/python-base-es2:r1
 FROM dev.exactspace.co/python3.11-base-es:r1
-RUN apt-get install -y python3-dev
 RUN mkdir /src
 COPY *.py /src/
 COPY index.py /src/
