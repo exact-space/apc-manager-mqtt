@@ -6,11 +6,13 @@ import paho.mqtt.client as paho
 # unitsIdList = ["62f3a6ebf38f4206da2bf0a7"]
 unitsIdList = ["63349b9c749f3c3081c6a472"]
 
-# apc = apcManager(unitsIdList,True)
+apc = apcManager(unitsIdList,True)
+# apc.runHistoricCal()
 # apc.deleteTagAndCalMeta()
-# apc.createTagAndCalMeta()
-apcr = apcReport(unitsIdList)
-apcr.mainFuncReport()
+apc.createTagAndCalMeta()
+# apcr = apcReport(unitsIdList)
+# apcr.mainFuncReport()
+# apcr.onlyApcTagsReport()
 exit()
 # apcapi = apcManagerApi(unitsIdList)
 # # apcapi.ApcData("months","Equipment")

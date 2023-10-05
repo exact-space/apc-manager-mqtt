@@ -14,16 +14,16 @@ import sys
 import itertools
 import traceback
 
-try:
-    import platform
-    version = platform.python_version().split(".")[0]
-    if version == "3":
-        import app_config.app_config as cfg
-    elif version == "2":
-        import app_config as cfg
-    config = cfg.getconfig()
-except:
-    from config import *
+import platform
+version = platform.python_version().split(".")[0]
+if version == "3":
+    import app_config.app_config as cfg
+elif version == "2":
+    import app_config as cfg
+config = cfg.getconfig()
+
+
+tagType = "apcManager"
 
 
 class fetching():
@@ -110,6 +110,7 @@ class fetching():
             }
 
             urlQuery = config["api"]["meta"] + '/calculations?filter={"where":' + json.dumps(query) + '}'  
+            print(urlQuery)
             response = requests.get(urlQuery)
             if(response.status_code==200):
                 # print(response.status_code)
@@ -158,6 +159,7 @@ class fetching():
                     "unitsId":unitsId,
                     "measureProperty":"Power",
                     "measureType":"Apc",
+                    "tagType" : "apcManager"
                     
                 }
                 if not field:
@@ -267,18 +269,21 @@ class fetching():
                 
                 query ={
                     "unitsId":unitsId,
-                    "or":[
-                    {"measureProperty":"Equipment Apc"},
-                    {"measureProperty":"System Apc"},
-                    {"measureProperty":"Unit Apc"},
-                    {"measureProperty":"ratio"},
-                    ]
+                    # "or":[
+                    # {"measureProperty":"Equipment Apc"},
+                    # {"measureProperty":"System Apc"},
+                    # {"measureProperty":"Unit Apc"},
+                    # {"measureProperty":"ratio"},
+                    # ],
+                    "tagType" : "apcManager"
+
                 }
                 urlQuery = config["api"]["meta"] + '/tagmeta?filter={"where":' + json.dumps(query) + '}'  
                 urls.append(urlQuery)
-                # print(urlQuery)
+                print(urlQuery)
             
-
+            
+            
             rs = (grequests.get(u) for u in urls)
             requests = grequests.map(rs)
             
@@ -331,6 +336,22 @@ class fetching():
         
         except:
             print(traceback.format_exc())
-
-
     # --------------------------- apc meta related end -------------------- #
+
+
+    def historicDataReq(self,body):
+        try:
+            unitsId = body["unitsId"]
+            id = body["id"]
+            print("current datatag:",body["dataTagId"])
+            url = config["api"]["meta"].replace("exactapi","") + f"service/launch/{unitsId}/historic-calculations?CALCULATION_ID={id}"
+            print(url)
+            res = requests.get(url)
+            statscode = res.status_code
+            print("status code", statscode)
+            if statscode != 200:
+                print("historic cal req failed")
+                print(res.status_code)
+                print(res.content)
+        except:
+            print(traceback.format_exc())

@@ -13,7 +13,7 @@ import math
 import sys
 import itertools
 import traceback
-from fetchinglmpl import fetching
+from fetchinglmpl import fetching,tagType
 
 
 import platform
@@ -24,9 +24,6 @@ elif version == "2":
     import app_config as cfg
 config = cfg.getconfig()
 
-tagType = os.environ.get("tagType")
-if tagType == None:
-    tagType = "-"
 
 loadQuery = {
                     "measureInstance" : 1,
@@ -51,6 +48,36 @@ def pp(s):
 
 
 class posting(fetching):
+
+    def delDataInTagmeta(self,tagmeta,type):
+        for i in tagmeta:
+            dataTagId = i["dataTagId"]
+            if type == "tagmeta":
+                url = config["api"]["meta"] + "/tagmeta/" + i["id"]
+            elif type =="cal":
+                url = config["api"]["meta"] + "/calculations/" + i["id"]
+                # print(url)
+            else:
+                print("procide valid type")
+            
+            response = requests.delete(url)
+
+            if response.status_code == 200 or response.status_code == 204:
+                if type == "tagmeta":
+                    print(f"{dataTagId} deleting tagmeta successfull...")
+                else:
+                    print(f"{dataTagId} deleting calulations successfull...")
+
+
+            else:
+                if type == "tagmeta":
+                    print(f"{dataTagId} deleting tagmeta unsuccessfull...")
+                    print(response.status_code,response.content)
+                else:
+                    print(f"{dataTagId} deleting calulations unsuccessfull...")
+                    print(response.status_code,response.content)
+
+
     def postInTagmeta(self,postBody):
         sumTagName = postBody["dataTagId"]
         unitsId = postBody["unitsId"]
@@ -60,6 +87,9 @@ class posting(fetching):
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
             print(f"Found multiple traces of {sumTagName} in tagmeta")
+            return
+            self.delDataInTagmeta(checkBody,"cal")
+
 
         if len(checkBody) == 0:
             try:
@@ -128,7 +158,7 @@ class posting(fetching):
             systemName = postdf.loc[0,"systemName"].replace(" ","")
             mp = postdf.loc[0,"measureProperty"].replace(" ","")
             
-            sumTagName = prefix +"_" + unitsId + "_" + systemName + "_" + epqName + "_Total_Power_" + mp
+            sumTagName = prefix +"_" + unitsId + "_" + systemName + "_" + epqName + "_Total_" + mp
             return sumTagName
         
         except:
@@ -158,6 +188,7 @@ class posting(fetching):
             postBody["component"]  = ""
             postBody["subcomponent"]  = ""
             postBody["componentName"] = ""
+            postBody["tagType"] = tagType
             
             # print(json.dumps(postBody,indent=4))
             self.postInTagmeta(postBody)
@@ -197,17 +228,20 @@ class posting(fetching):
             postBodyCal = self.createPostBodyForCal(sumTagName,postdf)
 
         checkBody = self.getCalculationsFromDataTagId(sumTagName)
-        # print("checkbody")
-        # print(json.dumps(checkBody,indent=4))
+        print("checkbody")
+        print(json.dumps(checkBody,indent=4))
 
         if len(checkBody)>1:
             print("ALEART!!!!!!!!!!!!")
             print(f"found multiple traces of {sumTagName} in cal")
-            return
+            self.delDataInTagmeta(checkBody,"cal")
+            
+            
         
         if len(checkBody) == 0:
             unitsId = postBodyCal["unitsId"]
             url = config["api"]["meta"] + f"/units/{unitsId}/calculations"
+            print(url)
             # url = "http://13.251.5.125/exactapi/calculations"
             print(json.dumps(postBodyCal,indent=4))
             response = requests.post(url,json = postBodyCal)
@@ -215,6 +249,7 @@ class posting(fetching):
 
             
             if response.status_code == 200 or response.status_code == 204:
+                print("status code:",response.status_code)
                 print(f"{sumTagName} Calcumations body posting successfull...")
 
             else:
@@ -306,6 +341,7 @@ class posting(fetching):
             postBody["equipmentName"] = "Performance Kpi"
             postBody["description"] = pbdf.loc[0,"systemName"].replace(" ","") + " Total System Apc"
             postBody["standardDescription"] = ""
+            postBody["tagType"] = tagType
             
             # print(json.dumps(postBody,indent=4))
 
@@ -366,6 +402,7 @@ class posting(fetching):
             unitName = self.getUnitName(unitsId)
             postBody["description"] = unitName+ " Total Unit Apc"
             postBody["standardDescription"] = ""
+            postBody["tagType"] = tagType
             
 
             # print(json.dumps(postBody,indent=4))
@@ -434,6 +471,7 @@ class apcManager(posting):
             postBody["systemName"] = "Generator System"
             postBody["equipmentName"] = "-"
             postBody["equipment"] = "-"
+            postBody["tagType"] = tagType
             
             self.postInTagmeta(postBody)
 
@@ -483,6 +521,7 @@ class apcManager(posting):
             postBody["measureType"] = type
             postBody["measureProperty"] =  "Equipment Apc"
             postBody["description"] = postBody["equipment"] + " Apc Tph" 
+            postBody["tagType"] = tagType
             
             # pp(postBody)
             
@@ -514,7 +553,7 @@ class apcManager(posting):
 
             postBody = self.createCalPostBody(self.unitsId,ctMsfMsfLoadTag,formula,"product")
             pp(postBody)
-            self.postInCal(ctMsfTagName,postBodyCal=postBody)
+            self.postInCal(ctMsfMsfLoadTag,postBodyCal=postBody)
         except:
             tr()
 
@@ -553,7 +592,7 @@ class apcManager(posting):
             tagmeta["dataTagId"] = newTag
             tagmeta["measureType"] = "Apc"
             tagmeta["description"] = tagmeta["equipmentName"] + " Power Consumption"
-            tagmeta["tagType"] = "Manual"
+            tagmeta["tagType"] = tagType
             tagmeta["benchmark"] = "-"
             tagmeta["benchmarkLoad"] = "-"
             tagmeta["table"] = "-"
@@ -583,10 +622,19 @@ class apcManager(posting):
     
     # -------------------------- Creating cal and meta for apc tags End ---------------------- #
     # ------------------------- Creating meta level start ---------------------- #
-    def createApcTags(self):
+    def getVoltages(self):
         try:
-            voltage = 6600
-            powerFactor = 0.9
+            f = open('voltage.json')
+            return json.load(f)
+        except:
+            tr()
+
+
+    def createApcTags(self,exceptList):
+        try:
+
+            voltageDict = self.getVoltages()
+            
             self.unitsId = self.unitsId1[0]
             query = {
                 "unitsId" : self.unitsId,
@@ -596,13 +644,20 @@ class apcManager(posting):
             tagmetaLst = self.getTagMeta(query)
             for tagmeta in tagmetaLst:
                 oldTagId = tagmeta["dataTagId"]
-                newTag = self.createTagmetaForApcTags(tagmeta)
-                self.createCalMetaForApcTags(newTag,oldTagId,voltage,powerFactor)
+                if oldTagId not in exceptList:
+                    print(tagmeta["equipment"])
+                    voltage = voltageDict[tagmeta["equipment"]][0]
+                    powerFactor = voltageDict[tagmeta["equipment"]][1]
+
+                    newTag = self.createTagmetaForApcTags(tagmeta)
+                    self.createCalMetaForApcTags(newTag,oldTagId,voltage,powerFactor)
+                else:
+                    print("exception found",  oldTagId)
         except:
             tr()
 
 
-    def mainELfunction(self):
+    def mainELfunction(self,exceptList):
         """
         Use: to filter data equipment wise.
         """
@@ -688,13 +743,25 @@ class apcManager(posting):
         except:
             print(traceback.format_exc())
 
+    def createExceptionList(self):
+        try:
+            f = open('exceptions.json')
+            data = json.load(f)
+            exceptList = data["taglist"]
+            return exceptList
+        except:
+            tr()
+
 
     def createTagAndCalMeta(self):
+        exceptList = self.createExceptionList()
+        
         for u in self.unitsIdList:
             self.unitsId1 = [u]
             if self.createApc:
-                self.createApcTags()
-            self.mainELfunction()
+                self.createApcTags(exceptList)
+            
+            self.mainELfunction(exceptList)
             self.mainSLFunction()
             self.mainULFucntion()
 
@@ -759,7 +826,18 @@ class apcManager(posting):
         self.delDataInTagmeta(tagmeta,"tagmeta")
         self.delDataInTagmeta(tagmetaCal,"cal")
 
+    
+
     # ------------------------- Deleting meta End --------------------------- # 
+
+    def runHistoricCal(self):
+        tagmeta = self.getTagmetaForDel()
+        dataTagIdLst = self.getDataTagIdFromMeta(tagmeta)
+        tagmetaCal = self.getCalForDel(dataTagIdLst)
+        
+        for i in tagmetaCal:
+            self.historicDataReq(i)
+            time.sleep(60*10)
     
 class apcReport(apcManager):
     
@@ -862,6 +940,55 @@ class apcReport(apcManager):
                 print(maindf)
                 
         except: 
+            tr()
+
+    def onlyApcTagsReport(self):
+        try:
+            for unitsId in self.unitsIdList:
+                voltageDict = self.getVoltages()
+                exceptList = self.createExceptionList()
+
+                # powerFactor = 0.9
+                self.unitsId = unitsId
+                query = {
+                    "unitsId" : self.unitsId,
+                    "measureProperty":"Power",
+                    "measureType" : "Current"
+                }
+                tagmetaLst = pd.DataFrame(self.getTagMeta(query))[["description","dataTagId","equipment","equipmentName"]]
+                tagmetaLst["newTagId"] = tagmetaLst["dataTagId"] + "_apc"
+
+                # tagmetaLst["Power Factor"] = powerFactor
+                
+                voltagedf = pd.DataFrame(voltageDict,index=["Voltage (V)" ,"Power Factor"]).T
+                tagmetaLst = tagmetaLst.set_index(["equipment"]).join(voltagedf).reset_index()
+
+                lastdf = self.getLastValues(list(tagmetaLst["dataTagId"]) + list(tagmetaLst["newTagId"])).T
+                
+                tagmetaLst = tagmetaLst.set_index(["dataTagId"]).join(lastdf).reset_index()
+                tagmetaLst = tagmetaLst.set_index(["newTagId"]).join(lastdf,rsuffix="_apc").reset_index()
+
+                tagmetaLst['dataTagId'] = tagmetaLst['dataTagId'].astype('category')
+
+                for col in tagmetaLst.select_dtypes(['category']):
+                    tagmetaLst[col] = tagmetaLst[col].cat.remove_categories(exceptList) # Identifying exception tags
+
+                tagmetaLst.dropna(subset=["dataTagId"],inplace=True,axis=0)
+                
+
+
+                tagmetaLst.drop(labels=["index","newTagId"],axis=1,inplace=True)
+                rnDict = {
+                    "last value" : "Normal Value (Amp)",
+                    "last value_apc" : "Apc Value (KW)"
+                }
+                tagmetaLst.rename(columns= rnDict,inplace=True)
+                tagmetaLst = tagmetaLst.round(2)
+                print(tagmetaLst)
+                
+                tagmetaLst.to_csv("Apc Tag Report.csv",index=False)
+
+        except:
             tr()
 
 
