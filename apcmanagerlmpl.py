@@ -591,6 +591,7 @@ class apcManager(posting):
             newTag = tagmeta["dataTagId"] + "_apc"
             tagmeta["dataTagId"] = newTag
             tagmeta["measureType"] = "Apc"
+            tagmeta["measureUnit"] = "Kw"
             tagmeta["description"] = tagmeta["equipmentName"] + " Power Consumption"
             tagmeta["tagType"] = tagType
             tagmeta["benchmark"] = "-"
@@ -696,6 +697,8 @@ class apcManager(posting):
                             
                             if len(self.mainSteamTag) > 0:
                                 self.mainFuncCtByMSF(eqpNamedf,sumTagName,sysName,msfLoadTagName)
+                                # self.mainFuncCtLoad(eqpNamedf,sumTagName)
+
                             else:
                                 self.mainFuncCtLoad(eqpNamedf,sumTagName)
         except:
@@ -821,6 +824,7 @@ class apcManager(posting):
     def deleteTagAndCalMeta(self):
         tagmeta = self.getTagmetaForDel()
         dataTagIdLst = self.getDataTagIdFromMeta(tagmeta)
+        
         tagmetaCal = self.getCalForDel(dataTagIdLst)
 
         self.delDataInTagmeta(tagmeta,"tagmeta")
@@ -834,7 +838,12 @@ class apcManager(posting):
         tagmeta = self.getTagmetaForDel()
         dataTagIdLst = self.getDataTagIdFromMeta(tagmeta)
         tagmetaCal = self.getCalForDel(dataTagIdLst)
-        
+        print(tagmetaCal)
+        lst = []
+        for i in tagmetaCal:
+            lst.append(i["id"])
+        print(lst)
+        return 
         for i in tagmetaCal:
             self.historicDataReq(i)
             time.sleep(60*10)
@@ -987,7 +996,9 @@ class apcReport(apcManager):
                 print(tagmetaLst)
                 
                 tagmetaLst.to_csv("Apc Tag Report.csv",index=False)
+                sum_apc_value_kw = tagmetaLst['Apc Value (KW)'].sum()
 
+                print("Summation of 'Apc Value (KW)':", sum_apc_value_kw)
         except:
             tr()
 

@@ -7,9 +7,9 @@ import paho.mqtt.client as paho
 unitsIdList = ["63349b9c749f3c3081c6a472"]
 
 apc = apcManager(unitsIdList,True)
-# apc.runHistoricCal()
+apc.runHistoricCal()
 # apc.deleteTagAndCalMeta()
-apc.createTagAndCalMeta()
+# apc.createTagAndCalMeta()
 # apcr = apcReport(unitsIdList)
 # apcr.mainFuncReport()
 # apcr.onlyApcTagsReport()
