@@ -1,9 +1,12 @@
+import gevent.monkey
+gevent.monkey.patch_all()
+import requests
+
 import warnings
 warnings.filterwarnings('ignore')
 import pandas as pd
 import numpy as np
 import json
-import requests
 import grequests
 import os
 import datetime
@@ -22,6 +25,16 @@ elif version == "2":
     import app_config as cfg
 config = cfg.getconfig()
 
+
+# config = {"api":{}}
+# config['BROKER_ADDRESS'] = "data.exactspace.co"
+# # config["BROKER-ADDRESS"] = "54.151.215.163"
+# config["api"]["meta"] = "https://data.exactspace.co/exactapi"
+# # config["api"]["query"] = "http://13.68.199.3/api/v1/datapoints/query"
+# config["api"]["query"] = "https://data.exactspace.co/api/v1/datapoints/query"
+# # config["api"]["datapoints"] = "http://13.68.199.3/exactdata/api/v1/datapoints"
+# config["api"]["datapoints"] = "https://data.exactspace.co/exactdata/api/v1/datapoints"
+# config["type"] = "manual"
 
 tagType = "apcManager"
 

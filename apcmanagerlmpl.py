@@ -497,7 +497,7 @@ class apcManager(posting):
 
     def mainFuncmsfByLoad(self,sysNamedf,sysName):
         try:
-            if len(self.mainSteamTag) > 0:
+            if len(self.mainSteamTag) > 1:
                 msfLoadTagName = self.createmsfBByLoadTagName()
                 self.createmsfLoadTagmeta(sysNamedf,sysName,msfLoadTagName)
                 self.createmsfLoadCal(msfLoadTagName)
@@ -629,11 +629,12 @@ class apcManager(posting):
             return json.load(f)
         except:
             tr()
+            return {}
 
 
     def createApcTags(self,exceptList):
         try:
-
+            
             voltageDict = self.getVoltages()
             
             self.unitsId = self.unitsId1[0]
@@ -647,8 +648,12 @@ class apcManager(posting):
                 oldTagId = tagmeta["dataTagId"]
                 if oldTagId not in exceptList:
                     print(tagmeta["equipment"])
-                    voltage = voltageDict[tagmeta["equipment"]][0]
-                    powerFactor = voltageDict[tagmeta["equipment"]][1]
+                    if voltageDict:
+                        voltage = voltageDict[tagmeta["equipment"]][0]
+                        powerFactor = voltageDict[tagmeta["equipment"]][1]
+                    else:
+                        voltage = 6600
+                        powerFactor = 0.8
 
                     newTag = self.createTagmetaForApcTags(tagmeta)
                     self.createCalMetaForApcTags(newTag,oldTagId,voltage,powerFactor)
@@ -695,7 +700,7 @@ class apcManager(posting):
                             sumTagName = self.postInTagmetaEL(eqpNamedf)
                             self.postInCal(sumTagName,eqpNamedf)
                             
-                            if len(self.mainSteamTag) > 0:
+                            if len(self.mainSteamTag) > 1:
                                 self.mainFuncCtByMSF(eqpNamedf,sumTagName,sysName,msfLoadTagName)
                                 # self.mainFuncCtLoad(eqpNamedf,sumTagName)
 
@@ -718,7 +723,7 @@ class apcManager(posting):
                         sysNamedf = sysNamedf[sysNamedf["systemInstance"]==lim].reset_index(drop=True)
 
                         mainSteamTag = self.ratioTagDict[self.unitsId][sysName]
-                        if len(mainSteamTag) > 0:
+                        if len(mainSteamTag) > 1:
                             print("only taking product")
                             sysNamedf = df[(df["systemName"]==sysName) & (df["measureType"] == "Product")].reset_index(drop=True)
                         else:
@@ -753,6 +758,7 @@ class apcManager(posting):
             exceptList = data["taglist"]
             return exceptList
         except:
+            return []
             tr()
 
 
