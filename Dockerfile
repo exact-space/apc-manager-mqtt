@@ -2,9 +2,7 @@
 FROM dev.exactspace.co/python3.11-base-es:r1
 RUN mkdir /src
 COPY *.py /src/
-COPY index.py /src/
-COPY BUILD_TIME /src/
-COPY main /src/
+COPY index.py  BUILD_TIME main /src/
 RUN chmod +x /src/main
 RUN chmod +x /src/index.py
 RUN chmod +x /src/*
