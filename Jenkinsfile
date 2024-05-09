@@ -21,7 +21,8 @@ pipeline {
         }
         stage("gcc") {
             steps {
-                sh "gcc -I/usr/include/python2.7 -Wall -Wextra -O2 -g -o index index.c -lpython2.7"
+                 sh 'gcc index.c -I/usr/include/python3.10/ -Wall -Wextra -O2 -g -o index $(python3-config --embed --ldflags)'
+                //sh "gcc -I/usr/include/python2.7 -Wall -Wextra -O2 -g -o index index.c -lpython2.7"
             }
         }
         /*stage("sending Build Approval mail to Devops Team") { 
