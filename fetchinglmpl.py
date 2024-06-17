@@ -282,12 +282,12 @@ class fetching():
                 
                 query ={
                     "unitsId":unitsId,
-                    # "or":[
-                    # {"measureProperty":"Equipment Apc"},
-                    # {"measureProperty":"System Apc"},
-                    # {"measureProperty":"Unit Apc"},
+                    "or":[
+                    {"measureProperty":"Equipment Apc"},
+                    {"measureProperty":"System Apc"},
+                    {"measureProperty":"Unit Apc"},
                     # {"measureProperty":"ratio"},
-                    # ],
+                    ],
                     "tagType" : "apcManager"
 
                 }
